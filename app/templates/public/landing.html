@@ -21,7 +21,7 @@
     </p>
 
     <div class="mt-8 flex flex-wrap items-center gap-3">
-      <a href="#" class="rounded-md bg-accent-500 px-4 py-2 text-sm font-medium text-ink-950 transition hover:bg-accent-400">
+      <a href="{{ url_for('auth.signup') }}" class="rounded-md bg-accent-500 px-4 py-2 text-sm font-medium text-ink-950 transition hover:bg-accent-400">
         Create a workspace
       </a>
       <a href="#roadmap" class="rounded-md border border-white/10 px-4 py-2 text-sm font-medium text-slate-300 transition hover:border-white/20 hover:text-white">
@@ -71,9 +71,9 @@
     <ol class="mt-6 grid gap-2 sm:grid-cols-2">
       {% set phases = [
         ("0", "Scaffold, database, deploy path", "done"),
-        ("1", "Schema and migrations", "next"),
-        ("2", "Auth, org scoping, RBAC", "queued"),
-        ("3", "Projects and issues", "queued"),
+        ("1", "Schema and migrations", "done"),
+        ("2", "Auth, org scoping, RBAC", "done"),
+        ("3", "Projects and issues", "next"),
         ("4", "Realtime comments and notifications", "queued"),
         ("5", "Attachments and quotas", "queued"),
         ("6", "Search", "queued"),

@@ -79,6 +79,23 @@ class User(UUIDPrimaryKey, Timestamps, Base):
     email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
+    # Flask-Login's protocol. Accounts are not deactivated in Harbor yet, so
+    # is_active is always True.
+    @property
+    def is_active(self) -> bool:
+        return True
+
+    @property
+    def is_authenticated(self) -> bool:
+        return True
+
+    @property
+    def is_anonymous(self) -> bool:
+        return False
+
+    def get_id(self) -> str:
+        return str(self.id)
+
 
 class Membership(UUIDPrimaryKey, Timestamps, Base):
     __tablename__ = "memberships"

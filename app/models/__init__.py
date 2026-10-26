@@ -6,6 +6,7 @@ from .activity import Activity
 from .issue import Comment, Issue, IssueLabel, IssuePriority, IssueStatus, Label
 from .org import Membership, Organization, Role, User
 from .project import Project
+from .session import Session
 
 __all__ = [
     "Activity",
@@ -19,5 +20,6 @@ __all__ = [
     "Organization",
     "Project",
     "Role",
+    "Session",
     "User",
 ]

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from datetime import timedelta
 from pathlib import Path
 from typing import ClassVar
 
@@ -45,3 +46,13 @@ class Config:
         "pool_recycle": 300,
     }
     SQLALCHEMY_ECHO = os.environ.get("SQLALCHEMY_ECHO") == "1"
+
+    # Sessions live in Postgres (see app/session.py); these control the cookie.
+    SESSION_COOKIE_NAME = "harbor_session"
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "Lax"
+    # Enable in production, where the app is served over HTTPS.
+    SESSION_COOKIE_SECURE = os.environ.get("SESSION_COOKIE_SECURE") == "1"
+    PERMANENT_SESSION_LIFETIME = timedelta(days=14)
+
+    WTF_CSRF_TIME_LIMIT = None

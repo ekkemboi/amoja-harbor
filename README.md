@@ -24,6 +24,31 @@ make dev                # http://localhost:5001
 
 `make dev` runs the Flask dev server on port 5001 (macOS reserves 5000 for AirPlay).
 
+## What works today
+
+| Area | Status |
+| --- | --- |
+| Sign up / sign in / sign out | Argon2id passwords, server-side sessions, CSRF on every form |
+| Workspaces | Create on signup or later at `/app/new`; `owner` membership |
+| Roles | `owner > admin > member > viewer`, enforced server-side |
+| Members | List, change role, remove — guarded by rank and last-owner rules |
+| Tenancy | `/app/<org_slug>/…`; non-members get 404, not 403 |
+
+## Routes
+
+| Route | Method | Notes |
+| --- | --- | --- |
+| `/` | GET | Landing page |
+| `/healthz` | GET | Liveness + database check |
+| `/signup` | GET, POST | Creates user, workspace, owner membership |
+| `/signin` | GET, POST | Honours `?next=` for same-site paths only |
+| `/signout` | POST | Deletes the server-side session row |
+| `/app` | GET | Redirects to the first workspace |
+| `/app/new` | POST | Creates another workspace |
+| `/app/<org_slug>/` | GET | Workspace home and member list |
+| `/app/<org_slug>/members/<id>/role` | POST | Admin or owner |
+| `/app/<org_slug>/members/<id>/remove` | POST | Admin or owner |
+
 ## Layout
 
 ```

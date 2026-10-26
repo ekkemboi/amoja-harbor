@@ -6,7 +6,11 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "alembic>=1.20.1",
+    "argon2-cffi>=25.1.0",
+    "email-validator>=2.3.0",
     "flask>=3.1.3",
+    "flask-login>=0.6.3",
+    "flask-wtf>=1.3.0",
     "gunicorn>=26.2.0",
     "psycopg[binary]>=3.3.6",
     "python-dotenv>=1.2.4",
@@ -30,6 +34,10 @@ src = ["app", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+# Alembic's autogenerate output is machine-written and long-lined.
+"migrations/versions/*.py" = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

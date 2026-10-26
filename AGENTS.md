@@ -23,8 +23,8 @@ agent) picking up the next phase.
 | --- | --- | --- |
 | 0 | Scaffold, database, health check | done |
 | 1 | Schema + migrations (orgs, users, memberships, projects, issues, comments, labels, activity) | done |
-| 2 | Auth, org scoping, RBAC enforcement + tests | next |
-| 3 | Projects & issues CRUD, board + list views | queued |
+| 2 | Auth, org scoping, RBAC enforcement + tests | done |
+| 3 | Projects & issues CRUD, board + list views | next |
 | 4 | Realtime comments, presence, notifications | queued |
 | 5 | Attachments to object storage, quotas | queued |
 | 6 | Search (FTS → hybrid) | queued |
@@ -43,6 +43,30 @@ agent) picking up the next phase.
 4. **Fragments are separate templates.** HTMX responses use `templates/partials/`.
 5. **Deterministic tests.** Tests run against a real Postgres (the Neon branch in `.env`)
    using a `harbor_test` schema or transaction rollback; no SQLite.
+
+## Auth and tenancy (phase 2)
+
+- **Sessions are rows in `sessions`**, not signed cookies. The cookie holds only an opaque
+  token, so `POST /signout` deletes server state and a stolen cookie can be revoked.
+  Anonymous sessions (CSRF tokens, flash messages) exist too and expire after 14 days;
+  `flask prune-sessions` clears them — wire it to cron when we deploy (phase 10).
+- **Passwords are Argon2id** (`app/security.py`). `accounts.authenticate` still runs a
+  verify against a dummy hash when the email is unknown, so timing does not reveal
+  whether an account exists.
+- **CSRF is global** via Flask-WTF. Every POST form needs
+  `<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">`.
+- **Org routes live under `/app/<org_slug>/`.** `orgs._pull_org` resolves the org in a
+  `url_value_preprocessor`; `orgs._require_membership` then rejects non-members with
+  **404, never 403** — a 403 would confirm that someone else's workspace exists.
+- **Role checks use `@requires_role(Role.X)`** against `g.membership`. Rank:
+  `owner 4 > admin 3 > member 2 > viewer 1`.
+- Role edits refuse all three of: changing your own role, touching a member ranked above
+  you, and granting a role above your own rank.
+- Signed-out `/app` hits redirect to `/signin?next=…`; `_safe_next` only follows
+  same-site relative paths.
+- Tests create real rows (no SQLite, no mocks) and `tests/factories.py` deletes them in
+  teardown. The suite takes ~90s because each write is a round trip to Neon; if that
+  becomes painful, run the suite against a dedicated Neon branch (`neon checkout test`).
 
 ## Schema (phase 1)
 

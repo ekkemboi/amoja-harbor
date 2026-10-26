@@ -20,18 +20,48 @@
           <span class="text-sm font-semibold tracking-tight">Harbor</span>
         </a>
 
+        {% if current_user.is_authenticated and g.get('org') %}
+        <span class="text-slate-600">/</span>
+        <a href="{{ url_for('orgs.home', org_slug=g.org.slug) }}" class="rounded-md px-2 py-1 text-sm text-slate-300 transition hover:bg-white/5">
+          {{ g.org.name }}
+        </a>
+        {% endif %}
+
         <nav class="ml-6 hidden items-center gap-1 sm:flex">
-          <a href="#features" class="rounded-md px-3 py-1.5 text-sm text-slate-400 transition hover:bg-white/5 hover:text-slate-100">Features</a>
-          <a href="#roadmap" class="rounded-md px-3 py-1.5 text-sm text-slate-400 transition hover:bg-white/5 hover:text-slate-100">Roadmap</a>
-          <span class="cursor-not-allowed rounded-md px-3 py-1.5 text-sm text-slate-600" title="Ships in phase 8">API</span>
+          <a href="{{ url_for('public.index') }}#features" class="rounded-md px-3 py-1.5 text-sm text-slate-400 transition hover:bg-white/5 hover:text-slate-100">Features</a>
+          <a href="{{ url_for('public.index') }}#roadmap" class="rounded-md px-3 py-1.5 text-sm text-slate-400 transition hover:bg-white/5 hover:text-slate-100">Roadmap</a>
         </nav>
 
         <div class="ml-auto flex items-center gap-2">
-          <span class="hidden rounded-md border border-white/10 px-2 py-1 text-[11px] font-medium text-slate-500 sm:inline">phase 0</span>
-          <a href="#" class="rounded-md bg-white px-3.5 py-1.5 text-sm font-medium text-ink-950 transition hover:bg-slate-200">Sign in</a>
+          {% if current_user.is_authenticated %}
+          <a href="{{ url_for('start.index') }}" class="hidden text-sm text-slate-400 transition hover:text-slate-100 sm:inline">
+            {{ current_user.name }}
+          </a>
+          <form method="post" action="{{ url_for('auth.signout') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button type="submit" class="rounded-md border border-white/10 px-3 py-1.5 text-sm text-slate-300 transition hover:border-white/20 hover:text-white">
+              Sign out
+            </button>
+          </form>
+          {% else %}
+          <a href="{{ url_for('auth.signin') }}" class="rounded-md px-3 py-1.5 text-sm text-slate-400 transition hover:bg-white/5 hover:text-slate-100">Sign in</a>
+          <a href="{{ url_for('auth.signup') }}" class="rounded-md bg-white px-3.5 py-1.5 text-sm font-medium text-ink-950 transition hover:bg-slate-200">Get started</a>
+          {% endif %}
         </div>
       </div>
     </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      <div class="mx-auto w-full max-w-6xl px-6 pt-4">
+        {% for category, message in messages %}
+        <div class="rounded-md border px-3 py-2 text-sm {% if category == 'error' %}border-red-500/30 bg-red-500/10 text-red-300{% else %}border-accent-500/30 bg-accent-500/10 text-accent-300{% endif %}">
+          {{ message }}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    {% endwith %}
 
     <main class="flex-1">{% block content %}{% endblock %}</main>
 
