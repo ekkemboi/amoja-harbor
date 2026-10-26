@@ -34,6 +34,11 @@ make dev                # http://localhost:5001
 | Members | List, change role, remove — guarded by rank and last-owner rules |
 | Tenancy | `/app/<org_slug>/…`; non-members get 404, not 403 |
 
+## Next five features
+
+See [`FEATURES.md`](FEATURES.md) for the planned scope, schema changes, routes, and
+definition of done.
+
 ## Routes
 
 | Route | Method | Notes |

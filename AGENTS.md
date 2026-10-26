@@ -3,6 +3,10 @@
 Harbor is a multi-tenant issue tracker. This file is the contract for anyone (human or
 agent) picking up the next phase.
 
+The next five features — scope, schema changes, routes, and definition of done — live in
+[`FEATURES.md`](FEATURES.md). Work from that file; the table below is only the long-range
+view.
+
 ## Commands
 
 | Task | Command |
