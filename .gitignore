@@ -1,41 +1,25 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Dependency manifest is pyproject.toml + uv.lock. Use `uv sync`.
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
+# Local environment
+.env
+.env.local
+.env.*.local
+.venv/
 
-# testing
-/coverage
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
-# next.js
-/.next/
-/out/
+# Build artifacts
+app/static/css/app.css
+bin/tailwindcss
 
-# production
-/build
+# Neon CLI context (contains project/branch IDs, not secrets)
+.neon
 
-# misc
+# macOS
 .DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
