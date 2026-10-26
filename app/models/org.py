@@ -102,7 +102,7 @@ class Membership(UUIDPrimaryKey, Timestamps, Base):
     __table_args__ = (UniqueConstraint("org_id", "user_id", name="uq_memberships_org_user"),)
 
     org_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+        Uuid, ForeignKey("organizations.id", ondelete="CASCADE")
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("users.id", ondelete="CASCADE"), index=True

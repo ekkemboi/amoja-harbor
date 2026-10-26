@@ -66,10 +66,10 @@ class Issue(UUIDPrimaryKey, Timestamps, Base):
     # Denormalized org_id so every authorization check is a single-column filter and
     # never requires a join through projects.
     org_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+        Uuid, ForeignKey("organizations.id", ondelete="CASCADE")
     )
     project_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("projects.id", ondelete="CASCADE"), index=True
+        Uuid, ForeignKey("projects.id", ondelete="CASCADE")
     )
     number: Mapped[int] = mapped_column(Integer, nullable=False)
 
@@ -112,9 +112,7 @@ class Comment(UUIDPrimaryKey, Timestamps, Base):
     org_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("organizations.id", ondelete="CASCADE"), index=True
     )
-    issue_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("issues.id", ondelete="CASCADE"), index=True
-    )
+    issue_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("issues.id", ondelete="CASCADE"))
     author_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("users.id", ondelete="RESTRICT"), index=True
     )
@@ -131,7 +129,7 @@ class Label(UUIDPrimaryKey, Timestamps, Base):
     __table_args__ = (UniqueConstraint("org_id", "name", name="uq_labels_org_name"),)
 
     org_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+        Uuid, ForeignKey("organizations.id", ondelete="CASCADE")
     )
     name: Mapped[str] = mapped_column(String(32))
     # Hex color used for the label chip.

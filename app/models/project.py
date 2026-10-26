@@ -17,7 +17,7 @@ class Project(UUIDPrimaryKey, Timestamps, Base):
     __table_args__ = (UniqueConstraint("org_id", "key", name="uq_projects_org_key"),)
 
     org_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+        Uuid, ForeignKey("organizations.id", ondelete="CASCADE")
     )
     # Short human key used in issue identifiers, e.g. "HRB-142".
     key: Mapped[str] = mapped_column(String(8))

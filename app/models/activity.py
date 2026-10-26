@@ -21,7 +21,7 @@ class Activity(UUIDPrimaryKey, Base):
     )
 
     org_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+        Uuid, ForeignKey("organizations.id", ondelete="CASCADE")
     )
     # Null for system-generated events (imports, webhooks, scheduled work).
     actor_id: Mapped[uuid.UUID | None] = mapped_column(

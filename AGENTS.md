@@ -106,6 +106,10 @@ Decisions that later phases depend on:
 - Use `db.get_session()` inside requests, `db.session_scope()` in scripts and jobs.
 - UUID primary keys (`uuid.uuid4`), `timestamptz` for all times, `created_at`/`updated_at`
   on every mutable table.
+- Indexes are composite-first. Postgres uses an index on `(a, b)` for filters on `a`
+  alone, so never put `index=True` on a column that is already the leading column of a
+  composite index or unique constraint. This bit us once: seven redundant indexes came
+  from doing exactly that.
 - Soft-delete only where the roadmap calls for it (`deleted_at`), never by deleting rows
   that audit records reference.
 
