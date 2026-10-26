@@ -22,8 +22,8 @@ agent) picking up the next phase.
 | # | Phase | Status |
 | --- | --- | --- |
 | 0 | Scaffold, database, health check | done |
-| 1 | Schema + migrations (orgs, users, memberships, projects, issues, comments, labels, activity) | next |
-| 2 | Auth, org scoping, RBAC enforcement + tests | queued |
+| 1 | Schema + migrations (orgs, users, memberships, projects, issues, comments, labels, activity) | done |
+| 2 | Auth, org scoping, RBAC enforcement + tests | next |
 | 3 | Projects & issues CRUD, board + list views | queued |
 | 4 | Realtime comments, presence, notifications | queued |
 | 5 | Attachments to object storage, quotas | queued |
@@ -43,6 +43,31 @@ agent) picking up the next phase.
 4. **Fragments are separate templates.** HTMX responses use `templates/partials/`.
 5. **Deterministic tests.** Tests run against a real Postgres (the Neon branch in `.env`)
    using a `harbor_test` schema or transaction rollback; no SQLite.
+
+## Schema (phase 1)
+
+One migration: `20261026_e40a67f2c0e7_initial_schema`. Applied to the `main` branch.
+
+| Table | Notes |
+| --- | --- |
+| `organizations` | `slug` is the URL handle: `/app/<slug>/...` |
+| `users` | global identity; email stored lowercase, enforced by CHECK |
+| `memberships` | `(org_id, user_id)` unique; role `owner > admin > member > viewer` |
+| `projects` | `(org_id, key)` unique; `issue_counter` allocates `KEY-<n>` atomically |
+| `issues` | `org_id` denormalized; `(project_id, number)` unique |
+| `comments` | `org_id` denormalized; ordered by `created_at` |
+| `labels`, `issue_labels` | `(org_id, name)` unique; many-to-many with issues |
+| `activity` | append-only, JSONB payload, no `updated_at` |
+
+Decisions that later phases depend on:
+
+- Enums are VARCHAR + CHECK (`native_enum=False`), so adding a status is a constraint
+  swap instead of `ALTER TYPE`. Python-side `StrEnum` is the source of truth.
+- `org_id` is denormalized onto issues, comments, and labels so authorization is a
+  single-column filter and never needs a join through `projects`.
+- UUID PKs use `gen_random_uuid()` server defaults, so raw SQL inserts work too.
+- `updated_at` is set by the ORM (`onupdate=now()`); scripts that write raw SQL must
+  set it themselves.
 
 ## Conventions
 
