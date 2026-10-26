@@ -17,6 +17,14 @@ load_dotenv(BASE_DIR / ".env.local")
 load_dotenv(BASE_DIR / ".env")
 
 
+def normalize_database_url(raw: str) -> str:
+    """Point a plain Postgres URL at the psycopg3 driver SQLAlchemy expects."""
+    for prefix in ("postgresql://", "postgres://"):
+        if raw.startswith(prefix):
+            return raw.replace(prefix, "postgresql+psycopg://", 1)
+    return raw
+
+
 def _database_url() -> str:
     """Build the SQLAlchemy URL for the direct (non-pooler) endpoint.
 
@@ -27,13 +35,10 @@ def _database_url() -> str:
     raw = os.environ.get("DATABASE_URL_UNPOOLED") or os.environ.get("DATABASE_URL")
     if not raw:
         raise RuntimeError(
-            "No database URL found. Run `neon env pull --file .env`, "
-            "or copy .env.example to .env and fill it in."
+            "No database URL found. Run `make db-up` for local Postgres, "
+            "or `neon env pull --file .env` for the cloud branch."
         )
-    for prefix in ("postgresql://", "postgres://"):
-        if raw.startswith(prefix):
-            return raw.replace(prefix, "postgresql+psycopg://", 1)
-    return raw
+    return normalize_database_url(raw)
 
 
 class Config:

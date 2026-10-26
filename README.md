@@ -8,7 +8,7 @@ with Jinja and HTMX.
 | Concern | Choice |
 | --- | --- |
 | Runtime | Python 3.13, Flask 3 |
-| Database | Postgres 18 on Neon (`aws-us-east-2`) |
+| Database | Postgres 18 — Docker locally, Neon (`aws-us-east-2`) in the cloud |
 | ORM / migrations | SQLAlchemy 2.1 + Alembic |
 | UI | Jinja templates, Tailwind CSS 4, HTMX 2 |
 | Tooling | uv, ruff, pytest |
@@ -16,11 +16,19 @@ with Jinja and HTMX.
 ## Quickstart
 
 ```bash
-uv sync                 # create .venv from uv.lock
-neon env pull --file .env   # or cp .env.example .env and fill in
-make css                # compile Tailwind (gitignored output)
-make dev                # http://localhost:5001
+uv sync                      # create .venv from uv.lock
+make db-up                   # Postgres 18 in Docker on port 5433 + harbor_test
+cp .env.example .env.local   # then uncomment the "Local Docker Postgres" block
+make db-upgrade              # apply migrations
+make css                     # compile Tailwind (gitignored output)
+make dev                     # http://localhost:5001
 ```
+
+`make test` needs nothing beyond `make db-up`: it applies migrations to
+`harbor_test` itself and never touches `harbor_dev`.
+
+To run against the Neon cloud branch instead, `neon env pull --file .env` and delete
+`.env.local` — the loader reads `.env.local` first, so that file is the switch.
 
 `make dev` runs the Flask dev server on port 5001 (macOS reserves 5000 for AirPlay).
 

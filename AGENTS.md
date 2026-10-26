@@ -12,6 +12,9 @@ view.
 | Task | Command |
 | --- | --- |
 | Install deps | `uv sync` |
+| Start local Postgres | `make db-up` (Docker, port 5433) |
+| Stop / reset local Postgres | `make db-down`, `make db-reset` |
+| Open a psql shell | `make db-psql` |
 | Run dev server (port 5001) | `make dev` |
 | Rebuild Tailwind after template edits | `make css` |
 | Tests | `make test` |
@@ -69,8 +72,8 @@ view.
 - Signed-out `/app` hits redirect to `/signin?next=…`; `_safe_next` only follows
   same-site relative paths.
 - Tests create real rows (no SQLite, no mocks) and `tests/factories.py` deletes them in
-  teardown. The suite takes ~90s because each write is a round trip to Neon; if that
-  becomes painful, run the suite against a dedicated Neon branch (`neon checkout test`).
+  teardown. Against local Docker Postgres the suite runs in ~4s; against Neon it took
+  ~90s because every write was a cross-region round trip.
 
 ## Schema (phase 1)
 
@@ -115,7 +118,15 @@ Decisions that later phases depend on:
 
 ## Environment
 
-- Neon project `harbor`, region `aws-us-east-2` (required for Functions/Storage/Realtime
-  when those phases arrive).
-- App connects with `DATABASE_URL_UNPOOLED` (direct endpoint) because gunicorn keeps its
-  own pool. Pooled `DATABASE_URL` is reserved for serverless callers.
+- **Local (development and tests):** Postgres 18 in Docker via `compose.yaml`, port 5433,
+  with two databases: `harbor_dev` and `harbor_test`. Credentials live in `.env.local`,
+  which loads before `.env` and wins over it.
+- **Cloud (staging and production):** Neon project `harbor`, region `aws-us-east-2`
+  (required for Functions/Storage/Realtime when those phases arrive).
+  `neon env pull --file .env` refreshes cloud credentials and leaves `.env.local` alone.
+- The app connects with `DATABASE_URL_UNPOOLED` (direct endpoint) because gunicorn keeps
+  its own pool. Pooled `DATABASE_URL` is reserved for serverless callers.
+- Tests read `TEST_DATABASE_URL` and the session fixture applies migrations to it, so a
+  test run can never touch `harbor_dev`.
+- Alembic honours `ALEMBIC_DATABASE_URL` (or a programmatic `sqlalchemy.url`) before
+  falling back to the app configuration, which is what lets tests migrate `harbor_test`.
