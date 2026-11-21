@@ -49,8 +49,8 @@ To reset local data, `make db-reset` deletes the database file and re-runs migra
 
 ## Next five features
 
-See [`FEATURES.md`](FEATURES.md) for the turn-by-turn scope, schema changes, routes, and
-definition of done.
+The turn-by-turn scope, schema changes, routes, and definition of done are kept in the
+project's internal `docs/FEATURES.md` build plan.
 
 ## Routes
 
