@@ -3,6 +3,8 @@ name = "amoja-harbor"
 version = "0.1.0"
 description = "Amoja Harbor — multi-tenant issue tracking and project workspaces"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.13"
 dependencies = [
     "alembic>=1.20.1",

@@ -98,3 +98,7 @@ instance/              local SQLite database (gitignored)
 - **Secrets stay in `.env`** (gitignored). `.env.example` documents keys only.
 
 See `AGENTS.md` for the phase roadmap and working notes.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
