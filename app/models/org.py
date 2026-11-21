@@ -8,7 +8,6 @@ from enum import StrEnum
 
 from sqlalchemy import (
     CheckConstraint,
-    DateTime,
     Enum,
     ForeignKey,
     String,
@@ -19,6 +18,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..db import Base
 from .mixins import Timestamps, UUIDPrimaryKey
+from .types import UTCDateTime
 
 
 class Role(StrEnum):
@@ -76,10 +76,10 @@ class User(UUIDPrimaryKey, Timestamps, Base):
     email: Mapped[str] = mapped_column(String(254), unique=True, index=True)
     name: Mapped[str] = mapped_column(String(120))
     password_hash: Mapped[str] = mapped_column(String(255))
-    email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    email_verified_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+    last_seen_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
 
-    # Flask-Login's protocol. Accounts are not deactivated in Harbor yet, so
+    # Flask-Login's protocol. Accounts are not deactivated in Amoja Harbor yet, so
     # is_active is always True.
     @property
     def is_active(self) -> bool:

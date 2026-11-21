@@ -1,4 +1,4 @@
-"""Harbor application factory."""
+"""Amoja Harbor application factory."""
 
 from __future__ import annotations
 

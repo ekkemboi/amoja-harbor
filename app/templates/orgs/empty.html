@@ -1,21 +1,25 @@
-{% extends "base.html" %}
-{% block title %}Create a workspace — Harbor{% endblock %}
+{% extends "auth_base.html" %}
+{% block title %}Create a workspace — Amoja Harbor{% endblock %}
 
 {% block content %}
-<div class="mx-auto w-full max-w-md px-6 py-16">
-  <h1 class="text-2xl font-semibold tracking-tight text-slate-50">Create a workspace</h1>
-  <p class="mt-2 text-sm text-slate-400">You have no workspaces yet.</p>
+<h1 class="auth-title">Create a workspace</h1>
+<p class="auth-sub">You have no workspaces yet. Create one to get started.</p>
 
-  <form method="post" action="{{ url_for('start.create') }}" class="mt-6 space-y-4">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-    <div>
-      <label for="name" class="mb-1.5 block text-xs font-medium text-slate-400">Workspace name</label>
-      <input id="name" name="name" type="text" required minlength="2"
-             class="w-full rounded-md border border-white/10 bg-ink-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:border-accent-500 focus:outline-none" />
-    </div>
-    <button type="submit" class="w-full rounded-md bg-accent-500 px-4 py-2 text-sm font-medium text-ink-950 transition hover:bg-accent-400">
-      Create workspace
-    </button>
-  </form>
-</div>
+<form method="post" action="{{ url_for('start.create') }}" class="form-grid auth-form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+  <div class="field">
+    <label class="label" for="name">Workspace name</label>
+    <input class="input" id="name" name="name" type="text" required minlength="2" />
+    <p class="hint">Becomes your address, e.g. /app/acme.</p>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary btn-block">Create workspace</button>
+  </div>
+</form>
+
+<p class="auth-footer">
+  <a href="{{ url_for('public.index') }}">Back to the landing page</a>
+</p>
 {% endblock %}

@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Download the Tailwind standalone CLI used by `make css`.
+set -euo pipefail
+
+VERSION="${TAILWIND_VERSION:-v4.3.5}"
+PLATFORM="$(uname -s)-$(uname -m)"
+
+case "$PLATFORM" in
+    Darwin-arm64) ASSET="tailwindcss-macos-arm64" ;;
+    Darwin-x86_64) ASSET="tailwindcss-macos-x64" ;;
+    Linux-x86_64) ASSET="tailwindcss-linux-x64" ;;
+    Linux-aarch64 | Linux-arm64) ASSET="tailwindcss-linux-arm64" ;;
+    *)
+        echo "Unsupported platform: $PLATFORM" >&2
+        echo "Download a release manually from https://github.com/tailwindlabs/tailwindcss/releases" >&2
+        exit 1
+        ;;
+esac
+
+DEST="$(cd "$(dirname "$0")" && pwd)/tailwindcss"
+URL="https://github.com/tailwindlabs/tailwindcss/releases/download/${VERSION}/${ASSET}"
+
+echo "Downloading Tailwind ${VERSION} for ${PLATFORM}..."
+curl -fL --retry 3 -o "$DEST" "$URL"
+chmod +x "$DEST"
+echo "Installed $DEST"

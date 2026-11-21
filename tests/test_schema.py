@@ -31,15 +31,16 @@ def test_every_model_table_exists(app):
     assert present >= EXPECTED_TABLES
 
 
-def test_enum_and_email_guards_are_enforced_in_postgres(app):
+def test_enum_email_and_foreign_key_guards_are_enforced_in_sqlite(app):
     with app.extensions["engine"].connect() as connection:
-        present = set(
-            connection.execute(
-                text(
-                    "select conname from pg_constraint "
-                    "where connamespace = 'public'::regnamespace and contype = 'c'"
-                )
+        schema = "\n".join(
+            sql
+            for sql in connection.execute(
+                text("select sql from sqlite_master where type = 'table'")
             ).scalars()
+            if sql
         )
+        foreign_keys = connection.execute(text("pragma foreign_keys")).scalar()
 
-    assert present >= EXPECTED_CHECK_CONSTRAINTS
+    assert foreign_keys == 1
+    assert all(name in schema for name in EXPECTED_CHECK_CONSTRAINTS)

@@ -1,0 +1,11 @@
+{% macro csrf_field() -%}
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+{%- endmacro %}
+
+{% macro avatar(name, size='md') -%}
+<span class="avatar avatar-{{ size }}" aria-hidden="true">{{ name[:1] | upper }}</span>
+{%- endmacro %}
+
+{% macro role_badge(role) -%}
+<span class="badge role-{{ role }}">{{ role | capitalize }}</span>
+{%- endmacro %}

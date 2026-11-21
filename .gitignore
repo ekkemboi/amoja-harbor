@@ -1,9 +1,19 @@
 # Dependency manifest is pyproject.toml + uv.lock. Use `uv sync`.
 
-# Local environment
-.env
-.env.local
-.env.*.local
+# Internal project notes (kept out of the public repository)
+docs/
+
+# Local environment (keep the example)
+.env*
+!.env.example
+
+# Local SQLite database and its WAL sidecars
+instance/
+*.db
+*.db-wal
+*.db-shm
+
+# Virtualenv
 .venv/
 
 # Python
@@ -15,11 +25,8 @@ __pycache__/
 htmlcov/
 
 # Build artifacts
-app/static/css/app.css
+# app/static/css/app.css is committed so a fresh clone renders without the CLI.
 bin/tailwindcss
-
-# Neon CLI context (contains project/branch IDs, not secrets)
-.neon
 
 # macOS
 .DS_Store

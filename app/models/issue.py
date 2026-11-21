@@ -8,7 +8,6 @@ from enum import StrEnum
 
 from sqlalchemy import (
     Date,
-    DateTime,
     Enum,
     ForeignKey,
     Index,
@@ -23,6 +22,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from ..db import Base
 from .mixins import Timestamps, UUIDPrimaryKey
 from .org import User
+from .types import UTCDateTime
 
 
 class IssueStatus(StrEnum):
@@ -95,7 +95,7 @@ class Issue(UUIDPrimaryKey, Timestamps, Base):
         Uuid, ForeignKey("users.id", ondelete="RESTRICT")
     )
     due_date: Mapped[date | None] = mapped_column(Date)
-    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    closed_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
 
     assignee: Mapped[User | None] = relationship(foreign_keys=[assignee_id])
     created_by: Mapped[User] = relationship(foreign_keys=[created_by_id])
@@ -118,7 +118,7 @@ class Comment(UUIDPrimaryKey, Timestamps, Base):
     )
 
     body: Mapped[str] = mapped_column(Text)
-    edited_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    edited_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
 
     issue: Mapped[Issue] = relationship(back_populates="comments")
     author: Mapped[User] = relationship()

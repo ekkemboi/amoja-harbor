@@ -5,12 +5,12 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Index, String, Uuid, func, text
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import JSON, ForeignKey, Index, String, Uuid, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..db import Base
 from .mixins import UUIDPrimaryKey
+from .types import UTCDateTime
 
 
 class Activity(UUIDPrimaryKey, Base):
@@ -37,9 +37,9 @@ class Activity(UUIDPrimaryKey, Base):
     # e.g. "issue.created", "issue.status_changed", "comment.created"
     verb: Mapped[str] = mapped_column(String(48), nullable=False)
     payload: Mapped[dict] = mapped_column(
-        JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb")
+        JSON, nullable=False, default=dict, server_default=text("'{}'")
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now()
+        UTCDateTime, nullable=False, server_default=func.now()
     )

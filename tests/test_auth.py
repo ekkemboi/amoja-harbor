@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from app.models import Membership, Role, Session, User
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 
 from tests.factories import PASSWORD, signin
 
@@ -135,3 +135,22 @@ def test_next_parameter_is_honoured_for_local_paths(client, factory):
 
     assert response.status_code == 302
     assert response.headers["Location"] == "/app"
+
+
+def test_stale_session_cookie_is_signed_out_cleanly(client, factory, app):
+    """A cookie whose server-side row vanished must not produce a 500."""
+    user = factory.user()
+    assert signin(client, user.email).status_code == 302
+
+    with app.extensions["session_factory"]() as db:
+        db.execute(delete(Session))
+        db.commit()
+
+    response = client.get("/app")
+
+    assert response.status_code == 302
+    assert "/signin" in response.headers["Location"]
+
+    page = client.get(response.headers["Location"])
+    assert page.status_code == 200
+    assert b"Sign in" in page.data

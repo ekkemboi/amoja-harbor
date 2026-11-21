@@ -10,50 +10,51 @@ from typing import ClassVar
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+INSTANCE_DIR = BASE_DIR / "instance"
+DEFAULT_DATABASE_PATH = INSTANCE_DIR / "amoja_harbor.db"
 
-# Neon writes .env.local; a conventional Flask project uses .env. Support both,
-# with real environment variables always taking precedence.
+# .env.local wins over .env; real environment variables win over both.
 load_dotenv(BASE_DIR / ".env.local")
 load_dotenv(BASE_DIR / ".env")
 
 
 def normalize_database_url(raw: str) -> str:
-    """Point a plain Postgres URL at the psycopg3 driver SQLAlchemy expects."""
-    for prefix in ("postgresql://", "postgres://"):
-        if raw.startswith(prefix):
-            return raw.replace(prefix, "postgresql+psycopg://", 1)
+    """Make a relative SQLite path absolute so every process agrees on the file."""
+    raw = raw.strip()
+    prefix = "sqlite:///"
+    if raw.startswith(prefix):
+        path = raw[len(prefix) :]
+        if path and path != ":memory:" and not Path(path).is_absolute():
+            return f"{prefix}{(BASE_DIR / path).resolve()}"
     return raw
 
 
-def _database_url() -> str:
-    """Build the SQLAlchemy URL for the direct (non-pooler) endpoint.
+def _ensure_sqlite_parent(url: str) -> None:
+    """Create the directory that will hold a file-backed SQLite database."""
+    prefix = "sqlite:///"
+    if not url.startswith(prefix):
+        return
+    path = url[len(prefix) :]
+    if path and path != ":memory:":
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
 
-    A long-lived gunicorn process keeps its own connection pool, so it talks to
-    Postgres directly instead of through PgBouncer. Serverless callers should
-    use DATABASE_URL (the pooled endpoint) instead.
-    """
-    raw = os.environ.get("DATABASE_URL_UNPOOLED") or os.environ.get("DATABASE_URL")
-    if not raw:
-        raise RuntimeError(
-            "No database URL found. Run `make db-up` for local Postgres, "
-            "or `neon env pull --file .env` for the cloud branch."
-        )
-    return normalize_database_url(raw)
+
+def _database_url() -> str:
+    """Use DATABASE_URL when provided, otherwise the local SQLite file."""
+    raw = os.environ.get("DATABASE_URL")
+    url = normalize_database_url(raw) if raw else f"sqlite:///{DEFAULT_DATABASE_PATH}"
+    _ensure_sqlite_parent(url)
+    return url
 
 
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-only-insecure-key")
     SQLALCHEMY_DATABASE_URI = _database_url()
-    SQLALCHEMY_ENGINE_OPTIONS: ClassVar[dict[str, object]] = {
-        "pool_pre_ping": True,
-        "pool_size": 5,
-        "max_overflow": 10,
-        "pool_recycle": 300,
-    }
+    SQLALCHEMY_ENGINE_OPTIONS: ClassVar[dict[str, object]] = {"pool_pre_ping": True}
     SQLALCHEMY_ECHO = os.environ.get("SQLALCHEMY_ECHO") == "1"
 
-    # Sessions live in Postgres (see app/session.py); these control the cookie.
-    SESSION_COOKIE_NAME = "harbor_session"
+    # Sessions live in SQLite (see app/session.py); these control the cookie.
+    SESSION_COOKIE_NAME = "amoja_harbor_session"
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
     # Enable in production, where the app is served over HTTPS.

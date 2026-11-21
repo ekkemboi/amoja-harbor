@@ -6,20 +6,45 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 
 from flask import Flask, current_app, g
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 
 class Base(DeclarativeBase):
-    """Declarative base shared by every Harbor model."""
+    """Declarative base shared by every Amoja Harbor model."""
+
+
+def _enable_sqlite_pragmas(engine: Engine) -> None:
+    """Turn on foreign keys and sensible concurrency defaults for every connection.
+
+    SQLite ignores foreign keys unless the pragma is set per connection, and the
+    schema relies on ``ON DELETE CASCADE`` rather than ORM-only cascades.
+    """
+
+    @event.listens_for(engine, "connect")
+    def _set_pragmas(dbapi_connection, connection_record) -> None:
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA busy_timeout=5000")
+        cursor.close()
 
 
 def init_db(app: Flask) -> None:
-    engine = create_engine(
-        app.config["SQLALCHEMY_DATABASE_URI"],
-        echo=app.config.get("SQLALCHEMY_ECHO", False),
-        **app.config["SQLALCHEMY_ENGINE_OPTIONS"],
-    )
+    url = app.config["SQLALCHEMY_DATABASE_URI"]
+    options = dict(app.config.get("SQLALCHEMY_ENGINE_OPTIONS") or {})
+
+    if url.startswith("sqlite"):
+        # Flask's threaded dev server may hand a pooled connection to another thread.
+        connect_args = dict(options.get("connect_args") or {})
+        connect_args.setdefault("check_same_thread", False)
+        options["connect_args"] = connect_args
+
+    engine = create_engine(url, echo=app.config.get("SQLALCHEMY_ECHO", False), **options)
+    if url.startswith("sqlite"):
+        _enable_sqlite_pragmas(engine)
+
     app.extensions["engine"] = engine
     app.extensions["session_factory"] = sessionmaker(bind=engine, expire_on_commit=False)
 

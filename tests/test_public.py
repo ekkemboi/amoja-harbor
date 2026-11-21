@@ -5,7 +5,7 @@ def test_landing_page_renders(client):
     response = client.get("/")
 
     assert response.status_code == 200
-    assert b"Harbor" in response.data
+    assert b"Amoja Harbor" in response.data
 
 
 def test_healthz_reports_a_live_database(client):

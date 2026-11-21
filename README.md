@@ -1,6 +1,6 @@
-# Harbor
+# Amoja Harbor
 
-Multi-tenant issue tracking and project workspaces. Flask + Postgres, server-rendered
+Multi-tenant issue tracking and project workspaces. Flask + SQLite, server-rendered
 with Jinja and HTMX.
 
 ## Stack
@@ -8,7 +8,7 @@ with Jinja and HTMX.
 | Concern | Choice |
 | --- | --- |
 | Runtime | Python 3.13, Flask 3 |
-| Database | Postgres 18 — Docker locally, Neon (`aws-us-east-2`) in the cloud |
+| Database | SQLite, file-backed (`instance/amoja_harbor.db`) |
 | ORM / migrations | SQLAlchemy 2.1 + Alembic |
 | UI | Jinja templates, Tailwind CSS 4, HTMX 2 |
 | Tooling | uv, ruff, pytest |
@@ -16,21 +16,26 @@ with Jinja and HTMX.
 ## Quickstart
 
 ```bash
-uv sync                      # create .venv from uv.lock
-make db-up                   # Postgres 18 in Docker on port 5433 + harbor_test
-cp .env.example .env.local   # then uncomment the "Local Docker Postgres" block
-make db-upgrade              # apply migrations
-make css                     # compile Tailwind (gitignored output)
-make dev                     # http://localhost:5001
+uv sync                # create .venv from uv.lock
+cp .env.example .env    # set SECRET_KEY; SQLite needs no server
+make db-upgrade         # apply migrations
+make dev                # http://localhost:5001
 ```
 
-`make test` needs nothing beyond `make db-up`: it applies migrations to
-`harbor_test` itself and never touches `harbor_dev`.
-
-To run against the Neon cloud branch instead, `neon env pull --file .env` and delete
-`.env.local` — the loader reads `.env.local` first, so that file is the switch.
-
 `make dev` runs the Flask dev server on port 5001 (macOS reserves 5000 for AirPlay).
+The compiled `app/static/css/app.css` is committed, so no CSS build is needed to run
+the app. After editing templates or `src.css`, install the Tailwind CLI once with
+`bin/install-tailwind`, then run `make css`.
+
+Tests need no running database. The suite creates a throwaway SQLite file under
+pytest's temporary directory, applies migrations to it, and removes it afterwards:
+
+```bash
+make test
+```
+
+To reset local data, `make db-reset` deletes the database file and re-runs migrations.
+`make db-shell` opens it with the `sqlite3` CLI.
 
 ## What works today
 
@@ -44,7 +49,7 @@ To run against the Neon cloud branch instead, `neon env pull --file .env` and de
 
 ## Next five features
 
-See [`FEATURES.md`](FEATURES.md) for the planned scope, schema changes, routes, and
+See [`FEATURES.md`](FEATURES.md) for the turn-by-turn scope, schema changes, routes, and
 definition of done.
 
 ## Routes
@@ -67,14 +72,17 @@ definition of done.
 ```
 app/
   __init__.py          app factory
-  config.py            env loading, database URL normalization
-  db.py                engine, Base, request-scoped session
-  blueprints/          route modules (public, auth, orgs, issues, ...)
-  models/              SQLAlchemy models
+  config.py            env loading, SQLite URL resolution
+  db.py                engine, pragmas, Base, request-scoped session
+  blueprints/          route modules (public, auth, orgs, ...)
+  models/              SQLAlchemy models and the UTC datetime type
   templates/           Jinja templates; partials/ for HTMX fragments
-  static/              css/src.css (source), js/htmx.min.js
+  static/              css/src.css (source), css/app.css (compiled), js/
 migrations/            Alembic
 tests/                 pytest
+instance/              local SQLite database (gitignored)
+```
+instance/              local SQLite database (gitignored)
 ```
 
 ## Conventions

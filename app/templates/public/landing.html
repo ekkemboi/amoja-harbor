@@ -1,67 +1,72 @@
-{% extends "base.html" %}
+{% extends "public_base.html" %}
+
+{% block title %}Amoja Harbor — issue tracking for teams that ship{% endblock %}
 
 {% block content %}
-<section class="relative overflow-hidden">
-  <div class="pointer-events-none absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(60%_100%_at_50%_0%,rgba(56,189,248,0.12),transparent_70%)]"></div>
+<section class="landing-hero">
+  <div class="landing-inner">
+    <span class="landing-badge">
+      <span class="landing-dot"></span>
+      Foundation build
+    </span>
 
-  <div class="relative mx-auto w-full max-w-6xl px-6 pt-20 pb-16 sm:pt-28">
-    <div class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs text-slate-400">
-      <span class="size-1.5 rounded-full bg-emerald-400"></span>
-      Early access
-    </div>
+    <h1 class="landing-title">Issue tracking for teams that actually ship.</h1>
 
-    <h1 class="mt-6 max-w-3xl text-4xl font-semibold tracking-tight text-slate-50 sm:text-6xl">
-      Issue tracking for teams<br class="hidden sm:block" />
-      that actually ship.
-    </h1>
-
-    <p class="mt-5 max-w-xl text-base leading-relaxed text-slate-400">
-      Harbor is a multi-tenant workspace: projects, issues, and comments that update live,
-      with real permissions, real search, and a real audit trail underneath.
+    <p class="landing-lede">
+      Amoja Harbor is a multi-tenant workspace: projects, issues, and comments that update
+      live, with real permissions, real search, and a real audit trail underneath.
     </p>
 
-    <div class="mt-8 flex flex-wrap items-center gap-3">
-      <a href="{{ url_for('auth.signup') }}" class="rounded-md bg-accent-500 px-4 py-2 text-sm font-medium text-ink-950 transition hover:bg-accent-400">
-        Create a workspace
-      </a>
-      <a href="#features" class="rounded-md border border-white/10 px-4 py-2 text-sm font-medium text-slate-300 transition hover:border-white/20 hover:text-white">
-        See what's coming
-      </a>
+    <div class="landing-actions">
+      {% if current_user.is_authenticated %}
+      <a href="{{ url_for('start.index') }}" class="btn btn-primary">Open your workspace</a>
+      {% else %}
+      <a href="{{ url_for('auth.signup') }}" class="btn btn-primary">Create a workspace</a>
+      {% endif %}
+      <a href="#features" class="btn btn-secondary">See what's coming</a>
     </div>
 
-    <dl class="mt-14 grid max-w-2xl grid-cols-2 gap-px overflow-hidden rounded-xl border border-white/10 bg-white/10 sm:grid-cols-4">
-      {% for label, value in [("Runtime", "Flask 3"), ("Database", "Postgres 18"), ("ORM", "SQLAlchemy 2"), ("UI", "Jinja + HTMX")] %}
-      <div class="bg-ink-950 px-4 py-3.5">
-        <dt class="text-[11px] uppercase tracking-wider text-slate-500">{{ label }}</dt>
-        <dd class="mt-1 text-sm font-medium text-slate-200">{{ value }}</dd>
+    <dl class="landing-stats">
+      <div class="landing-stat">
+        <dt>Runtime</dt>
+        <dd>Flask 3</dd>
       </div>
-      {% endfor %}
+      <div class="landing-stat">
+        <dt>Database</dt>
+        <dd>SQLite</dd>
+      </div>
+      <div class="landing-stat">
+        <dt>ORM</dt>
+        <dd>SQLAlchemy 2</dd>
+      </div>
+      <div class="landing-stat">
+        <dt>UI</dt>
+        <dd>Jinja + HTMX</dd>
+      </div>
     </dl>
   </div>
 </section>
 
-<section id="features" class="border-t border-white/5 bg-white/[0.015]">
-  <div class="mx-auto w-full max-w-6xl px-6 py-16">
-    <h2 class="text-sm font-medium uppercase tracking-wider text-slate-500">What's coming</h2>
-    <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {% set features = [
-        ("Projects & issues", "Org-scoped workspaces, board and list views, labels, priorities, and assignment."),
-        ("Live comments", "Comments and presence stream over HTMX partials, no page reloads, no duplicate state."),
-        ("Search that holds up", "Postgres full-text search over issues and comments, upgraded to hybrid ranking later."),
-        ("Attachments", "Uploads go to object storage per branch, with previews, quotas, and cleanup."),
-        ("Roles & audit", "Admin, member, and viewer roles enforced at the data layer, with every write recorded."),
-        ("Public API", "Scoped API keys, rate limits, and webhooks with retry delivery for external integrations.")
-      ] %}
-      {% for title, body in features %}
-      <article class="rounded-xl border border-white/10 bg-ink-950/60 p-5 transition hover:border-white/20">
-        <div class="flex items-start justify-between gap-3">
-          <h3 class="text-sm font-semibold text-slate-100">{{ title }}</h3>
-          <span class="shrink-0 rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-medium tracking-wide text-slate-500">Coming soon</span>
-        </div>
-        <p class="mt-2 text-sm leading-relaxed text-slate-400">{{ body }}</p>
-      </article>
-      {% endfor %}
-    </div>
+<section id="features" class="features-section">
+  <p class="section-eyebrow">What's coming</p>
+  <div class="features-grid">
+    {% set features = [
+      ("Projects &amp; issues", "Org-scoped workspaces, board and list views, labels, priorities, and assignment."),
+      ("Live comments", "Comments and presence stream over HTMX partials, no page reloads, no duplicate state."),
+      ("Search that holds up", "SQLite full-text search over issues and comments, upgraded to hybrid ranking later."),
+      ("Attachments", "Uploads go to object storage per workspace, with previews, quotas, and cleanup."),
+      ("Roles &amp; audit", "Owner, admin, member, and viewer roles enforced at the data layer, with every write recorded."),
+      ("Public API", "Scoped API keys, rate limits, and webhooks with retry delivery for external integrations.")
+    ] %}
+    {% for title, body in features %}
+    <article class="feature-card">
+      <div class="feature-top">
+        <h3 class="feature-title">{{ title | safe }}</h3>
+        <span class="badge badge-plain">Soon</span>
+      </div>
+      <p class="feature-copy">{{ body }}</p>
+    </article>
+    {% endfor %}
   </div>
 </section>
 {% endblock %}

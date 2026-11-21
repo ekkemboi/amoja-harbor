@@ -1,6 +1,6 @@
-# AGENTS.md — Harbor working notes
+# AGENTS.md — Amoja Harbor working notes
 
-Harbor is a multi-tenant issue tracker. This file is the contract for anyone (human or
+Amoja Harbor is a multi-tenant issue tracker. This file is the contract for anyone (human or
 agent) picking up the next phase.
 
 The next five features — scope, schema changes, routes, and definition of done — live in
@@ -12,17 +12,14 @@ view.
 | Task | Command |
 | --- | --- |
 | Install deps | `uv sync` |
-| Start local Postgres | `make db-up` (Docker, port 5433) |
-| Stop / reset local Postgres | `make db-down`, `make db-reset` |
-| Open a psql shell | `make db-psql` |
+| Apply migrations | `make db-upgrade` |
+| Reset the local database | `make db-reset` |
+| Open a SQLite shell | `make db-shell` |
 | Run dev server (port 5001) | `make dev` |
 | Rebuild Tailwind after template edits | `make css` |
 | Tests | `make test` |
 | Lint / format | `make lint`, `make fmt` |
 | New migration | `make db-revision m="add issues"` |
-| Apply migrations | `make db-upgrade` |
-| Pull DB creds | `neon env pull --file .env` |
-| New Neon branch for a feature | `neon checkout <name> --create` |
 
 ## Phase roadmap
 
@@ -48,8 +45,20 @@ view.
    reject unauthorized actions independently.
 3. **Migrations only.** Never call `Base.metadata.create_all()` outside tests.
 4. **Fragments are separate templates.** HTMX responses use `templates/partials/`.
-5. **Deterministic tests.** Tests run against a real Postgres (the Neon branch in `.env`)
-   using a `harbor_test` schema or transaction rollback; no SQLite.
+5. **Deterministic tests.** Tests run against a throwaway SQLite file created under
+   pytest's temporary directory and migrated with Alembic; no mocks, no shared state.
+
+## UI shell
+
+- `templates/base.html` is the authenticated workspace shell: fixed 268px sidebar on
+  desktop, off-canvas drawer with overlay on mobile, workspace card, icon navigation,
+  and a user footer.
+- `templates/public_base.html` wraps the landing page; `templates/auth_base.html` wraps
+  sign-in, sign-up, and the no-workspace screen.
+- Sidebar links use HTMX (`hx-target="#page-content"`, `hx-select="#page-content"`) so
+  future pages swap only the content area.
+- Shared Jinja helpers live in `templates/_macros.html`; styles live in
+  `app/static/css/src.css` and are compiled with `make css`.
 
 ## Auth and tenancy (phase 2)
 
@@ -71,13 +80,13 @@ view.
   you, and granting a role above your own rank.
 - Signed-out `/app` hits redirect to `/signin?next=…`; `_safe_next` only follows
   same-site relative paths.
-- Tests create real rows (no SQLite, no mocks) and `tests/factories.py` deletes them in
-  teardown. Against local Docker Postgres the suite runs in ~4s; against Neon it took
-  ~90s because every write was a cross-region round trip.
+- Tests create real rows (no mocks) and `tests/factories.py` deletes them in teardown.
+  The suite is fast because SQLite is a local file and migrations run once per session.
 
 ## Schema (phase 1)
 
-One migration: `20261026_e40a67f2c0e7_initial_schema`. Applied to the `main` branch.
+One initial migration: `20261026_e40a67f2c0e7_initial_schema`, plus sessions and index
+cleanup. SQLite is the only supported database.
 
 | Table | Notes |
 | --- | --- |
@@ -88,7 +97,7 @@ One migration: `20261026_e40a67f2c0e7_initial_schema`. Applied to the `main` bra
 | `issues` | `org_id` denormalized; `(project_id, number)` unique |
 | `comments` | `org_id` denormalized; ordered by `created_at` |
 | `labels`, `issue_labels` | `(org_id, name)` unique; many-to-many with issues |
-| `activity` | append-only, JSONB payload, no `updated_at` |
+| `activity` | append-only, JSON payload, no `updated_at` |
 
 Decisions that later phases depend on:
 
@@ -96,9 +105,13 @@ Decisions that later phases depend on:
   swap instead of `ALTER TYPE`. Python-side `StrEnum` is the source of truth.
 - `org_id` is denormalized onto issues, comments, and labels so authorization is a
   single-column filter and never needs a join through `projects`.
-- UUID PKs use `gen_random_uuid()` server defaults, so raw SQL inserts work too.
+- UUID PKs default to `uuid.uuid4` in Python. Raw SQL inserts must supply an id.
+- `UTCDateTime` (`app/models/types.py`) normalizes values to UTC on write and re-attaches
+  UTC on read, because SQLite does not store timezone offsets.
 - `updated_at` is set by the ORM (`onupdate=now()`); scripts that write raw SQL must
   set it themselves.
+- Foreign keys are enforced: `app/db.py` runs `PRAGMA foreign_keys=ON` on every SQLite
+  connection, so `ON DELETE CASCADE` works without ORM cascades.
 
 ## Conventions
 
@@ -107,10 +120,10 @@ Decisions that later phases depend on:
 - Blueprints are per-domain: `public`, `auth`, `orgs`, `issues`, `comments`, `admin`, `api`.
 - Models live in `app/models/<domain>.py`, exported from `app/models/__init__.py`.
 - Use `db.get_session()` inside requests, `db.session_scope()` in scripts and jobs.
-- UUID primary keys (`uuid.uuid4`), `timestamptz` for all times, `created_at`/`updated_at`
+- UUID primary keys (`uuid.uuid4`), `UTCDateTime` for all times, `created_at`/`updated_at`
   on every mutable table.
-- Indexes are composite-first. Postgres uses an index on `(a, b)` for filters on `a`
-  alone, so never put `index=True` on a column that is already the leading column of a
+- Indexes are composite-first. SQLite uses an index on `(a, b)` for filters on `a` alone,
+  so never put `index=True` on a column that is already the leading column of a
   composite index or unique constraint. This bit us once: seven redundant indexes came
   from doing exactly that.
 - Soft-delete only where the roadmap calls for it (`deleted_at`), never by deleting rows
@@ -118,15 +131,13 @@ Decisions that later phases depend on:
 
 ## Environment
 
-- **Local (development and tests):** Postgres 18 in Docker via `compose.yaml`, port 5433,
-  with two databases: `harbor_dev` and `harbor_test`. Credentials live in `.env.local`,
-  which loads before `.env` and wins over it.
-- **Cloud (staging and production):** Neon project `harbor`, region `aws-us-east-2`
-  (required for Functions/Storage/Realtime when those phases arrive).
-  `neon env pull --file .env` refreshes cloud credentials and leaves `.env.local` alone.
-- The app connects with `DATABASE_URL_UNPOOLED` (direct endpoint) because gunicorn keeps
-  its own pool. Pooled `DATABASE_URL` is reserved for serverless callers.
-- Tests read `TEST_DATABASE_URL` and the session fixture applies migrations to it, so a
-  test run can never touch `harbor_dev`.
+- **Development and production:** SQLite, at `instance/amoja_harbor.db` by default. Set
+  `DATABASE_URL=sqlite:///path/to/file.db` to move it; relative paths resolve from the
+  repository root.
+- `app/db.py` enables foreign keys, WAL journaling, and a busy timeout on every
+  connection. `instance/` and `*.db*` are gitignored.
+- Tests read `TEST_DATABASE_URL` when set, otherwise they create a temporary database
+  file per session and apply migrations to it, so a test run never touches local data.
 - Alembic honours `ALEMBIC_DATABASE_URL` (or a programmatic `sqlalchemy.url`) before
-  falling back to the app configuration, which is what lets tests migrate `harbor_test`.
+  falling back to the app configuration.
+- The old Neon/Postgres configuration is archived in `.env.neon.backup` and is not loaded.

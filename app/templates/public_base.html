@@ -1,0 +1,62 @@
+{% import "_macros.html" as ui with context %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}Amoja Harbor{% endblock %}</title>
+    <meta name="description" content="Amoja Harbor — issue tracking and project workspaces for teams that ship." />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}" />
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    <header class="public-header">
+      <div class="public-header-inner">
+        <a class="brand-lockup" href="{{ url_for('public.index') }}">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M12 22V8" />
+              <path d="M5 12H2a10 10 0 0 0 20 0h-3" />
+              <circle cx="12" cy="5" r="3" />
+            </svg>
+          </span>
+          <span class="brand-copy">
+            <span class="brand-name">Amoja Harbor</span>
+            <span class="brand-sub">Issue tracking</span>
+          </span>
+        </a>
+
+        <nav class="public-nav" aria-label="Sections">
+          <a href="{{ url_for('public.index') }}#features">Features</a>
+          <a href="{{ url_for('public.healthz') }}">Health</a>
+        </nav>
+
+        <div class="public-actions">
+          {% if current_user.is_authenticated %}
+          <a class="btn btn-secondary btn-sm" href="{{ url_for('start.index') }}">Open workspace</a>
+          <form method="post" action="{{ url_for('auth.signout') }}">
+            {{ ui.csrf_field() }}
+            <button type="submit" class="btn btn-ghost btn-sm">Sign out</button>
+          </form>
+          {% else %}
+          <a class="btn btn-ghost btn-sm" href="{{ url_for('auth.signin') }}">Sign in</a>
+          <a class="btn btn-primary btn-sm" href="{{ url_for('auth.signup') }}">Get started</a>
+          {% endif %}
+        </div>
+      </div>
+    </header>
+
+    <main>{% block content %}{% endblock %}</main>
+
+    <footer class="public-footer">
+      <div class="public-footer-inner">
+        <p style="margin: 0;">Amoja Harbor — built with Flask, SQLite, and HTMX.</p>
+        <p style="margin: 0;">
+          <a href="{{ url_for('public.healthz') }}">Health</a>
+          <span aria-hidden="true"> &middot; </span>
+          <a href="{{ url_for('public.index') }}#features">Features</a>
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>

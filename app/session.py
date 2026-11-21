@@ -1,4 +1,4 @@
-"""Postgres-backed implementation of Flask's SessionInterface."""
+"""SQLite-backed implementation of Flask's SessionInterface."""
 
 from __future__ import annotations
 
@@ -8,6 +8,8 @@ from datetime import UTC, datetime, timedelta
 
 from flask import Flask, Request, Response
 from flask.sessions import SessionInterface, SessionMixin
+from sqlalchemy import update
+from sqlalchemy.orm.exc import StaleDataError
 from werkzeug.datastructures import CallbackDict
 
 from .db import get_session
@@ -29,7 +31,7 @@ class DatabaseSession(CallbackDict, SessionMixin):
 class DatabaseSessionInterface(SessionInterface):
     def __init__(
         self,
-        cookie_name: str = "harbor_session",
+        cookie_name: str = "amoja_harbor_session",
         lifetime: timedelta = timedelta(days=14),
     ) -> None:
         self.cookie_name = cookie_name
@@ -49,9 +51,17 @@ class DatabaseSessionInterface(SessionInterface):
             if row is not None:
                 db.delete(row)
                 db.commit()
-            return None
+            # Never return None: Flask turns that into a NullSession, which cannot
+            # hold a CSRF token or a flash message.
+            return DatabaseSession()
 
-        row.last_seen_at = now
+        # Touch the row with an immediate UPDATE rather than a pending ORM change.
+        # If another request removes the row mid-flight (sign out everywhere, an
+        # expired-session sweep), there is nothing left to flush against it.
+        if now - row.last_seen_at >= timedelta(minutes=5):
+            db.execute(update(SessionRow).where(SessionRow.id == sid).values(last_seen_at=now))
+            db.commit()
+
         return DatabaseSession(dict(row.data), sid=sid)
 
     def save_session(self, app: Flask, session: DatabaseSession, response: Response) -> None:
@@ -64,7 +74,11 @@ class DatabaseSessionInterface(SessionInterface):
                 row = db.get(SessionRow, session.sid) if session.sid else None
                 if row is not None:
                     db.delete(row)
-                    db.commit()
+                    try:
+                        db.commit()
+                    except StaleDataError:
+                        # Another request already removed it; nothing to revoke.
+                        db.rollback()
                 response.delete_cookie(self.cookie_name, domain=domain, path=path)
             return
 
@@ -81,7 +95,7 @@ class DatabaseSessionInterface(SessionInterface):
             except ValueError:
                 user_id = None
 
-        row = db.get(SessionRow, sid)
+        row = db.get(SessionRow, sid, populate_existing=True)
         if row is None:
             row = SessionRow(
                 id=sid,
@@ -96,7 +110,14 @@ class DatabaseSessionInterface(SessionInterface):
             row.data = dict(session)
             row.expires_at = expires_at
             row.last_seen_at = now
-        db.commit()
+        try:
+            db.commit()
+        except StaleDataError:
+            # The row was revoked while the request was running (for example by
+            # "sign out everywhere"); treat this device as signed out.
+            db.rollback()
+            response.delete_cookie(self.cookie_name, domain=domain, path=path)
+            return
 
         response.set_cookie(
             self.cookie_name,
